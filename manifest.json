@@ -1,7 +1,7 @@
 {
-  "name": "訂餐系統 管理員",
-  "short_name": "管理員",
-  "start_url": "./admin.html",
+  "name": "訂餐系統",
+  "short_name": "訂餐",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
