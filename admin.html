@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>管理員</title>
+<meta name="theme-color" content="#131109">
+<link rel="manifest" href="./manifest-admin.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="管理員">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#131109; --surface:#1E1A11; --surface-2:#272115; --line:#3A3221;
+    --gold:#E8B33C; --gold-dim:#8A7440; --text:#F2ECE0; --muted:#9A9384;
+    --sage:#7FA86B; --rust:#B4553F;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;min-width:0}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font-family:"Noto Sans TC",system-ui,sans-serif;
+       font-size:16px;line-height:1.6;padding-bottom:max(44px,env(safe-area-inset-bottom))}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700}
+
+  header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);
+         padding-top:max(10px,env(safe-area-inset-top))}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 10px}
+  .top .ttl{font-size:17px;font-weight:700}
+  .top .ttl small{display:block;font-size:12px;color:var(--muted);font-weight:400}
+  .link{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
+        font-size:13px;padding:7px 12px;border-radius:7px;cursor:pointer;flex:none}
+  .link.on{border-color:var(--gold-dim);color:var(--gold)}
+
+  .tabs{display:flex;gap:6px;padding-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1 0 auto;min-width:54px;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+       padding:8px 6px 7px;color:var(--muted);font-family:inherit;cursor:pointer;text-align:center;line-height:1.25}
+  .tab .w{font-size:15px;font-weight:700;color:var(--text)}
+  .tab .d{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:11px;letter-spacing:.02em}
+  .tab.half{border-color:var(--gold-dim)}
+  .tab.half .d{color:var(--gold-dim)}
+  .tab.done{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,179,60,.35), 0 0 14px -4px rgba(232,179,60,.65)}
+  .tab.done .d{color:var(--gold)}
+  .tab.sel{background:var(--gold);border-color:var(--gold)}
+  .tab.sel .w,.tab.sel .d{color:#231B08}
+  .tab.today .w::after{content:"·";color:var(--gold);margin-left:3px}
+  .tab.sel.today .w::after{color:#231B08}
+
+  section{margin:24px 0}
+  h2{font-size:14px;color:var(--muted);font-weight:500;margin:0 0 12px}
+  .dayttl{font-size:21px;font-weight:700;margin:18px 0 0}
+  .dayttl small{font-size:13px;color:var(--muted);font-weight:400;margin-left:8px}
+
+  .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .slot{border:1px dashed var(--line);border-radius:10px;background:var(--surface);aspect-ratio:3/4;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+        color:var(--muted);font-size:14px;cursor:pointer;position:relative;overflow:hidden;text-align:center;padding:8px}
+  .slot.filled{border-style:solid;border-color:var(--gold-dim)}
+  .slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .slot .tag{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-size:13px;color:#fff;
+             background:linear-gradient(transparent,rgba(0,0,0,.85));z-index:2;text-align:left}
+  .slot .plus{font-size:30px;color:var(--gold-dim);line-height:1}
+  .slot input{display:none}
+
+  .state{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+         border-radius:10px;padding:12px 14px;margin-top:14px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--sage);flex:none}
+  .state.shut .dot{background:var(--rust)}
+  .state.wait .dot{background:var(--gold-dim)}
+  .state .t{flex:1;font-size:15px}
+  .state .t small{display:block;color:var(--muted);font-size:13px}
+
+  .btn{background:var(--surface-2);border:1px solid var(--gold-dim);color:var(--gold);border-radius:8px;
+       padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex:none}
+  .btn.solid{background:var(--gold);color:#231B08;border-color:var(--gold)}
+  .btn.ghost{border-color:var(--line);color:var(--muted)}
+  .btn:active{transform:scale(.97)}
+  .btn.wide{width:100%;padding:14px;font-size:16px;margin-top:10px}
+
+  .tally{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .code{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:20px;width:42px;flex:none;color:var(--gold)}
+  .row .bar{flex:1;display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+  .row .bar i{width:11px;height:11px;border-radius:2px;background:var(--gold-dim)}
+  .row .n{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:23px;width:34px;text-align:right;flex:none}
+  .row.zero{opacity:.28}
+  .row.total{background:var(--surface-2);color:var(--gold)}
+  .row.total .code{width:auto;font-family:inherit;font-size:15px;color:var(--muted);font-weight:500}
+
+  .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:8px}
+  .p{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 10px;
+     text-align:left;cursor:pointer;color:var(--text);font-family:inherit}
+  .p .s{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:17px}
+  .p .o{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;color:var(--gold);letter-spacing:.06em}
+  .p.paid{opacity:.55}
+  .p.paid .o{color:var(--sage)}
+  .p.paid .s::after{content:" ✓";color:var(--sage)}
+  .p.ro{cursor:default}
+  .sub{font-size:13px;color:var(--muted);margin:18px 0 8px;display:flex;justify-content:space-between}
+  .miss{font-family:"JetBrains Mono",monospace;font-weight:700;color:var(--muted);background:var(--surface);
+        border:1px solid var(--line);border-radius:9px;padding:12px 14px;font-size:15px;line-height:1.9;word-spacing:.3em}
+  .empty{color:var(--muted);font-size:14px;padding:10px 2px}
+
+  /* 設定：時間框在手機上會爆版，這裡把它鎖死 */
+  .setrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .setrow label{flex:1 1 auto;color:var(--muted);min-width:0}
+  .setrow input{flex:0 0 auto;width:130px;max-width:44vw;min-width:0;
+                -webkit-appearance:none;appearance:none;
+                background:var(--surface);border:1px solid var(--line);color:var(--text);
+                border-radius:7px;padding:10px 8px;font-family:"JetBrains Mono",monospace;font-weight:700;
+                font-size:16px;text-align:center;line-height:1.2}
+  .setrow input::-webkit-date-and-time-value{text-align:center;margin:0}
+  .setrow input::-webkit-calendar-picker-indicator{margin:0;padding:0;opacity:.55}
+  .hint{color:var(--muted);font-size:13px;margin:14px 0 0;line-height:1.7}
+
+  .gate{max-width:320px;margin:15vh auto 0;padding:0 16px;text-align:center}
+  .gate h1{font-size:22px;margin:0 0 6px}
+  .gate p{color:var(--muted);font-size:14px;margin:0 0 20px}
+  .gate input{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--text);
+              border-radius:10px;padding:16px;font-size:26px;text-align:center;letter-spacing:.5em;
+              font-family:"JetBrains Mono",monospace;font-weight:700;-webkit-appearance:none;appearance:none}
+  .gate .err{color:var(--rust);font-size:14px;height:20px;margin-top:10px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--gold);
+         color:#231B08;font-weight:700;font-size:15px;padding:10px 20px;border-radius:999px;opacity:0;
+         pointer-events:none;transition:opacity .18s,transform .18s;z-index:60}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap"><p style="padding:40px 0;color:#9A9384">載入中…</p></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAd7VtfhNW_DgwPrXaYfY_Nz_WLPoWSFvA",
+  authDomain: "lunch-77823.firebaseapp.com",
+  projectId: "lunch-77823",
+  storageBucket: "lunch-77823.firebasestorage.app",
+  messagingSenderId: "178487710705",
+  appId: "1:178487710705:web:8d8f26f742e8c56e506a50",
+  measurementId: "G-PM5VHQ6TTQ"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const BENTO = ["A1","A2","A3","A4","A5","A6","A7","A8"];
+const SETS  = ["B1","B2","B3"];
+const ALL   = [...BENTO, ...SETS];
+const D = { seatCount:35, openTime:"06:00", closeTime:"08:10" };
+const WD = ["一","二","三","四","五"];
+
+/* ---- 時間 ---- */
+function twNow(){ const n=new Date(); return new Date(n.getTime()+n.getTimezoneOffset()*60000+8*3600000); }
+function keyOf(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function shift(key,n){ const [y,m,d]=key.split("-").map(Number); const t=new Date(Date.UTC(y,m-1,d));
+  t.setUTCDate(t.getUTCDate()+n);
+  return t.getUTCFullYear()+"-"+String(t.getUTCMonth()+1).padStart(2,"0")+"-"+String(t.getUTCDate()).padStart(2,"0"); }
+function md(key){ const [,m,d]=key.split("-").map(Number); return m+"/"+d; }
+function pretty(key){ const [y,m,d]=key.split("-").map(Number);
+  const w=["日","一","二","三","四","五","六"][new Date(Date.UTC(y,m-1,d)).getUTCDay()];
+  return `${m}/${d} 星期${w}`; }
+function mins(s){ const [h,m]=String(s).split(":").map(Number); return h*60+m; }
+function nowMins(){ const t=twNow(); return t.getHours()*60+t.getMinutes(); }
+function todayKey(){ return keyOf(twNow()); }
+// 週一到週五；週六、週日看到的是下一週
+function weekKeys(){
+  const t = twNow(), dow = t.getDay();
+  const delta = dow===0 ? 1 : dow===6 ? 2 : 1-dow;
+  t.setDate(t.getDate()+delta);
+  const mon = keyOf(t);
+  return [0,1,2,3,4].map(i=>shift(mon,i));
+}
+
+/* ---- state ---- */
+let settings = Object.assign({}, D);
+let settingsLoaded = false;
+let unlocked = sessionStorage.getItem("lunch_admin") === "1";
+let week = weekKeys();
+let view = "day";                 // day | settings | history
+let sel = 0;                      // 0-4
+let dayDocs = {};                 // key -> data
+let orders = [], photos = { bento:null, set:null };
+let hist = { key: todayKey(), orders:null, loading:false };
+let unsubWeek=null, unsubOrders=null, unsubMedia=null;
+
+const app = document.getElementById("app");
+let toastTimer;
+function toast(t){ const el=document.getElementById("toast"); el.textContent=t; el.classList.add("on");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("on"),1500); }
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* 預設選到今天，不在本週就選星期一 */
+(function initSel(){ const i = week.indexOf(todayKey()); sel = i >= 0 ? i : 0; })();
+function selKey(){ return week[sel]; }
+
+/* ---- PIN ---- */
+function renderGate(setup){
+  app.innerHTML = `<div class="gate">
+    <h1>${setup?"設一組管理密碼":"管理員"}</h1>
+    <p>${setup?"4 位數字，之後進後台都用這組。":"輸入密碼進入後台。"}</p>
+    <input id="pin" type="tel" inputmode="numeric" maxlength="4" placeholder="····">
+    <div class="err" id="pinErr"></div>
+    <button class="btn solid wide" id="pinGo">${setup?"設定並進入":"進入"}</button></div>`;
+  const pin = document.getElementById("pin");
+  setTimeout(()=>pin.focus(), 60);
+  const go = async ()=>{
+    const v = pin.value.trim();
+    if(!/^\d{4}$/.test(v)){ document.getElementById("pinErr").textContent="要 4 位數字"; return; }
+    if(setup){
+      try{ await db.collection("config").doc("settings").set({ adminPin:v }, { merge:true }); settings.adminPin=v; }
+      catch(e){ console.error(e); document.getElementById("pinErr").textContent="存不進去，檢查規則"; return; }
+    } else if(v !== settings.adminPin){
+      document.getElementById("pinErr").textContent="密碼不對"; pin.value=""; return;
+    }
+    unlocked = true; sessionStorage.setItem("lunch_admin","1");
+    watchWeek(); watchSel(); render();
+  };
+  document.getElementById("pinGo").onclick = go;
+  pin.onkeydown = e=>{ if(e.key==="Enter") go(); };
+}
+
+/* ---- 照片 ---- */
+async function compress(file){
+  let bmp;
+  try{ bmp = await createImageBitmap(file, { imageOrientation:"from-image" }); }
+  catch(e){ bmp = await createImageBitmap(file); }
+  const scale = Math.min(1, 1100 / bmp.width);
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width*scale); c.height = Math.round(bmp.height*scale);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  let q = 0.62, out = c.toDataURL("image/jpeg", q);
+  while(out.length > 720000 && q > 0.28){ q -= 0.08; out = c.toDataURL("image/jpeg", q); }
+  return out;
+}
+async function upload(kind, file){
+  const key = selKey();
+  toast("處理照片中…");
+  try{
+    const data = await compress(file);
+    await db.collection("days").doc(key).collection("media").doc(kind).set({
+      data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    const shot = Object.assign({}, (dayDocs[key]&&dayDocs[key].shot)||{}, { [kind]:true });
+    await db.collection("days").doc(key).set({
+      shot, createdAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+    toast("上傳完成");
+  }catch(e){ console.error(e); toast("上傳失敗，再試一次"); }
+}
+
+async function setForce(v){
+  await db.collection("days").doc(selKey()).set({ forceOpen:v }, { merge:true });
+  toast(v===true?"已手動開啟":v===false?"已關閉":"恢復自動");
+}
+async function togglePaid(o){
+  if(!confirm(o.paid ? `${o.seat} 號改回還沒付？` : `${o.seat} 號已經付錢了？`)) return;
+  await db.collection("days").doc(selKey()).collection("orders").doc(String(o.seat)).set({
+    paid: !o.paid, paidAt: !o.paid ? firebase.firestore.FieldValue.serverTimestamp() : null }, { merge:true });
+}
+
+/* ---- 統計 ---- */
+function tallyOf(list){
+  const t = {}; ALL.forEach(c=>t[c]=0);
+  list.forEach(o=>{
+    if(o.bento && t[o.bento]!==undefined) t[o.bento]++;
+    (o.sets||[]).forEach(s=>{ if(t[s]!==undefined) t[s]++; });
+  });
+  return t;
+}
+function tallyHTML(list){
+  const t = tallyOf(list);
+  const total = Object.values(t).reduce((a,b)=>a+b,0);
+  return `<div class="tally">` + ALL.map(c=>{
+    const n = t[c];
+    return `<div class="row ${n?"":"zero"}"><div class="code">${c}</div>
+      <div class="bar">${"<i></i>".repeat(n)}</div><div class="n">${n}</div></div>`;
+  }).join("") + `<div class="row total"><div class="code">總共</div><div class="bar"></div>
+    <div class="n">${total}</div></div></div>`;
+}
+function copyText(){
+  const t = tallyOf(orders);
+  const lines = [pretty(selKey()) + " 訂餐"];
+  ALL.forEach(c=>{ if(t[c]) lines.push(`${c} x${t[c]}`); });
+  const total = Object.values(t).reduce((a,b)=>a+b,0);
+  lines.push(`共 ${total} 份`);
+  const text = lines.join("\n");
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast("已複製，去群組貼上"), ()=>prompt("手動複製：", text));
+  } else prompt("手動複製：", text);
+}
+
+function phaseOf(key){
+  const d = dayDocs[key];
+  const shot = d && d.shot;
+  if(!(shot && (shot.bento || shot.set))) return "none";
+  if(key > todayKey()) return "future";
+  if(key < todayKey()) return "past";
+  if(d.forceOpen === true) return "open";
+  if(d.forceOpen === false) return "closed";
+  const n = nowMins();
+  if(n < mins(settings.openTime||D.openTime)) return "early";
+  if(n >= mins(settings.closeTime||D.closeTime)) return "closed";
+  return "open";
+}
+
+/* ---- 畫面 ---- */
+function render(){
+  if(!settingsLoaded) return;
+  if(!unlocked){ renderGate(!settings.adminPin); return; }
+
+  const tabs = week.map((k,i)=>{
+    const s = (dayDocs[k] && dayDocs[k].shot) || {};
+    const cls = [ "tab",
+      (s.bento && s.set) ? "done" : (s.bento || s.set) ? "half" : "",
+      (view==="day" && sel===i) ? "sel" : "",
+      k===todayKey() ? "today" : "" ].filter(Boolean).join(" ");
+    return `<button class="${cls}" data-tab="${i}"><div class="w">${WD[i]}</div><div class="d">${md(k)}</div></button>`;
+  }).join("");
+
+  const head = `<header><div class="wrap">
+    <div class="top">
+      <div class="ttl">管理員<small>${md(week[0])} – ${md(week[4])} 這一週</small></div>
+      <button class="link ${view==="history"?"on":""}" id="histBtn">歷史紀錄</button>
+    </div>
+    <div class="tabs">${tabs}
+      <button class="tab ${view==="settings"?"sel":""}" data-tab="set"><div class="w">設定</div><div class="d">·</div></button>
+    </div>
+  </div></header>`;
+
+  let body;
+  if(view === "settings") body = settingsView();
+  else if(view === "history") body = historyView();
+  else body = dayView();
+
+  app.innerHTML = head + `<div class="wrap">${body}</div>`;
+  bind();
+}
+
+function dayView(){
+  const key = selKey();
+  const p = phaseOf(key);
+  const isToday = key === todayKey();
+  const openT = settings.openTime||D.openTime, closeT = settings.closeTime||D.closeTime;
+
+  const active = orders.filter(o=>o.bento || (o.sets||[]).length);
+  const unpaid = active.filter(o=>!o.paid).sort((a,b)=>a.seat-b.seat);
+  const paid   = active.filter(o=>o.paid).sort((a,b)=>a.seat-b.seat);
+  const has = new Set(active.map(o=>o.seat));
+  const missing = [];
+  for(let i=1;i<=(settings.seatCount||D.seatCount);i++) if(!has.has(i)) missing.push(i);
+
+  const stateBox =
+    p === "none"   ? `<div class="state wait"><i class="dot"></i><div class="t">還沒拍單子<small>拍完這天才會開</small></div></div>` :
+    p === "future" ? `<div class="state wait"><i class="dot"></i><div class="t">已排好，等當天<small>學生${isToday?"":"當天 "+openT}才看得到</small></div></div>` :
+    p === "past"   ? `<div class="state shut"><i class="dot"></i><div class="t">這天已經過了<small>下面是當天的紀錄</small></div></div>` :
+    p === "early"  ? `<div class="state wait"><i class="dot"></i><div class="t">${openT} 才開放<small>還沒到開放時間</small></div>
+                        <button class="btn" id="openNow">提前開啟</button></div>` :
+    p === "open"   ? `<div class="state"><i class="dot"></i><div class="t">開放中<small>${dayDocs[key]&&dayDocs[key].forceOpen===true?"手動開啟中，記得自己關":closeT+" 自動截止"}</small></div>
+                        <button class="btn ghost" id="closeNow">關閉</button></div>` :
+                     `<div class="state shut"><i class="dot"></i><div class="t">已關閉<small>有人漏點就按開啟</small></div>
+                        <button class="btn solid" id="openNow">手動開啟</button></div>`;
+
+  const forced = dayDocs[key] && dayDocs[key].forceOpen;
+  const resetBtn = (isToday && (forced===true||forced===false))
+    ? `<button class="btn ghost wide" id="auto">恢復自動（${openT}–${closeT}）</button>` : "";
+
+  return `
+  <div class="dayttl">${pretty(key)}${isToday?`<small>今天</small>`:""}</div>
+
+  <section>
+    <div class="slots">
+      <label class="slot ${photos.bento?"filled":""}">
+        ${photos.bento?`<img src="${photos.bento}" alt=""><span class="tag">便當單 · 點一下換</span>`
+                      :`<span class="plus">＋</span><span>拍便當單</span>`}
+        <input type="file" accept="image/*" capture="environment" data-kind="bento">
+      </label>
+      <label class="slot ${photos.set?"filled":""}">
+        ${photos.set?`<img src="${photos.set}" alt=""><span class="tag">套餐單 · 點一下換</span>`
+                    :`<span class="plus">＋</span><span>拍套餐單</span>`}
+        <input type="file" accept="image/*" capture="environment" data-kind="set">
+      </label>
+    </div>
+    ${stateBox}${resetBtn}
+  </section>
+
+  <section>
+    <h2>統計</h2>
+    ${tallyHTML(orders)}
+    <button class="btn solid wide" id="copy">複製統計</button>
+  </section>
+
+  <section>
+    <h2>收錢</h2>
+    <div class="sub"><span>還沒付</span><span class="mono">${unpaid.length}</span></div>
+    ${unpaid.length?`<div class="people">${unpaid.map(personCard).join("")}</div>`:`<div class="empty">全部收齊了</div>`}
+    <div class="sub"><span>已付</span><span class="mono">${paid.length}</span></div>
+    ${paid.length?`<div class="people">${paid.map(personCard).join("")}</div>`:`<div class="empty">還沒有人付</div>`}
+  </section>
+
+  <section>
+    <h2>沒訂餐的人</h2>
+    ${missing.length?`<div class="miss">${missing.join("  ")}</div>`:`<div class="empty">全班都訂了</div>`}
+  </section>`;
+}
+
+function personCard(o, ro){
+  const items = [o.bento, ...(o.sets||[])].filter(Boolean).join(" ");
+  return `<button class="p ${o.paid?"paid":""} ${ro?"ro":""}" ${ro?"":`data-seat="${o.seat}"`}>
+    <div class="s">${o.seat}</div><div class="o">${items}</div></button>`;
+}
+
+function settingsView(){
+  return `
+  <section>
+    <h2>訂餐時間</h2>
+    <div class="setrow"><label>每天開放</label><input id="openTime" type="time" value="${settings.openTime||D.openTime}"></div>
+    <div class="setrow"><label>每天截止</label><input id="closeTime" type="time" value="${settings.closeTime||D.closeTime}"></div>
+    <div class="setrow"><label>班上人數</label><input id="seatCount" type="number" inputmode="numeric" min="1" max="60" value="${settings.seatCount||D.seatCount}"></div>
+    <p class="hint">改完馬上生效，全班的頁面會自己更新。<br>時間以台灣時間為準，不管手機時區設成哪裡。</p>
+  </section>
+  <section>
+    <h2>後台</h2>
+    <button class="btn ghost wide" id="chpin">換管理密碼</button>
+    <button class="btn ghost wide" id="logout">鎖定後台</button>
+  </section>`;
+}
+
+function historyView(){
+  const list = hist.orders;
+  let inner;
+  if(hist.loading) inner = `<div class="empty">讀取中…</div>`;
+  else if(!list) inner = `<div class="empty">選一個日期查紀錄。</div>`;
+  else if(!list.length) inner = `<div class="empty">${pretty(hist.key)} 沒有人訂餐。</div>`;
+  else {
+    const sorted = [...list].sort((a,b)=>a.seat-b.seat);
+    const paidN = sorted.filter(o=>o.paid).length;
+    inner = tallyHTML(sorted) +
+      `<div class="sub"><span>每個人點了什麼</span><span class="mono">${paidN}/${sorted.length} 已付</span></div>
+       <div class="people">${sorted.map(o=>personCard(o,true)).join("")}</div>`;
+  }
+  return `<section>
+    <h2>歷史紀錄</h2>
+    <div class="setrow"><label>日期</label><input id="histDate" type="date" value="${hist.key}"></div>
+    ${inner}
+  </section>`;
+}
+
+async function loadHistory(key){
+  hist = { key, orders:null, loading:true }; render();
+  try{
+    const snap = await db.collection("days").doc(key).collection("orders").get();
+    const list = snap.docs.map(d=>{ const v=d.data();
+      return { seat:Number(v.seat ?? d.id), bento:v.bento??null, sets:v.sets||[], paid:!!v.paid }; })
+      .filter(o=>o.bento || o.sets.length);
+    hist = { key, orders:list, loading:false };
+  }catch(e){ console.error(e); hist = { key, orders:[], loading:false }; toast("讀取失敗"); }
+  render();
+}
+
+/* ---- 綁事件 ---- */
+function bind(){
+  app.querySelectorAll("[data-tab]").forEach(b=>{
+    b.onclick = ()=>{
+      if(b.dataset.tab === "set"){ view = "settings"; render(); return; }
+      sel = Number(b.dataset.tab); view = "day"; watchSel(); render();
+    };
+  });
+  const hb = document.getElementById("histBtn");
+  if(hb) hb.onclick = ()=>{
+    if(view === "history"){ view = "day"; render(); }
+    else { view = "history"; render(); if(!hist.orders && !hist.loading) loadHistory(hist.key); }
+  };
+
+  app.querySelectorAll("input[data-kind]").forEach(inp=>{
+    inp.onchange = ()=>{ if(inp.files && inp.files[0]) upload(inp.dataset.kind, inp.files[0]); inp.value=""; };
+  });
+  const on = document.getElementById("openNow");  if(on) on.onclick = ()=>setForce(true);
+  const cn = document.getElementById("closeNow"); if(cn) cn.onclick = ()=>setForce(false);
+  const au = document.getElementById("auto");     if(au) au.onclick = ()=>setForce(null);
+  const cp = document.getElementById("copy");     if(cp) cp.onclick = copyText;
+
+  app.querySelectorAll(".p[data-seat]").forEach(el=>{
+    el.onclick = ()=>{ const o = orders.find(x=>String(x.seat)===el.dataset.seat); if(o) togglePaid(o); };
+  });
+
+  const ot = document.getElementById("openTime");
+  if(ot) ot.onchange = e=>saveSetting({ openTime: e.target.value || D.openTime });
+  const ct = document.getElementById("closeTime");
+  if(ct) ct.onchange = e=>saveSetting({ closeTime: e.target.value || D.closeTime });
+  const sc = document.getElementById("seatCount");
+  if(sc) sc.onchange = e=>saveSetting({ seatCount: Math.max(1, Math.min(60, Number(e.target.value)||D.seatCount)) });
+
+  const cpn = document.getElementById("chpin");
+  if(cpn) cpn.onclick = async ()=>{
+    const v = (prompt("新的 4 位數管理密碼：")||"").trim();
+    if(!/^\d{4}$/.test(v)){ if(v) toast("要 4 位數字"); return; }
+    await saveSetting({ adminPin:v }); toast("密碼已更新");
+  };
+  const lo = document.getElementById("logout");
+  if(lo) lo.onclick = ()=>{ sessionStorage.removeItem("lunch_admin"); unlocked=false; render(); };
+
+  const hd = document.getElementById("histDate");
+  if(hd) hd.onchange = ()=>{ if(hd.value) loadHistory(hd.value); };
+}
+async function saveSetting(obj){
+  try{ await db.collection("config").doc("settings").set(obj, { merge:true }); toast("已更新"); }
+  catch(e){ console.error(e); toast("存不進去"); }
+}
+
+/* ---- 監聽 ---- */
+function watchWeek(){
+  if(unsubWeek) unsubWeek();
+  unsubWeek = db.collection("days")
+    .where(firebase.firestore.FieldPath.documentId(), "in", week)
+    .onSnapshot(snap=>{
+      dayDocs = {};
+      snap.forEach(d=>{ dayDocs[d.id] = d.data(); });
+      render();
+    }, e=>console.error(e));
+}
+function watchSel(){
+  if(unsubOrders) unsubOrders();
+  if(unsubMedia) unsubMedia();
+  orders = []; photos = { bento:null, set:null };
+  const ref = db.collection("days").doc(selKey());
+  unsubOrders = ref.collection("orders").onSnapshot(snap=>{
+    orders = snap.docs.map(d=>{ const v=d.data();
+      return { seat:Number(v.seat ?? d.id), bento:v.bento??null, sets:v.sets||[], paid:!!v.paid }; });
+    render();
+  }, e=>console.error(e));
+  unsubMedia = ref.collection("media").onSnapshot(snap=>{
+    photos = { bento:null, set:null };
+    snap.forEach(d=>{ photos[d.id] = d.data().data || null; });
+    render();
+  }, e=>console.error(e));
+}
+
+db.collection("config").doc("settings").onSnapshot(s=>{
+  if(s.exists) settings = Object.assign({}, D, s.data());
+  settingsLoaded = true; render();
+}, e=>{ console.error(e); settingsLoaded = true; render(); });
+
+if(unlocked){ watchWeek(); watchSel(); }
+
+/* 每 30 秒：狀態重算；跨週或跨日自動換 */
+setInterval(()=>{
+  const w = weekKeys();
+  if(w.join() !== week.join()){
+    week = w;
+    const i = week.indexOf(todayKey()); sel = i>=0 ? i : 0;
+    if(unlocked){ watchWeek(); watchSel(); }
+  }
+  if(unlocked) render();
+}, 30000);
+</script>
+</body>
+</html>
